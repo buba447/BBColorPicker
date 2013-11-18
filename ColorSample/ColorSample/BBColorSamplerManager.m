@@ -8,6 +8,15 @@
 
 #import "BBColorSamplerManager.h"
 
+struct bColor {
+  float r;
+  float g;
+  float b;
+  float y;
+  float u;
+  float v;
+};
+
 @implementation BBColorSamplerManager
 
 - (id) init {
@@ -379,6 +388,132 @@
         completionBlock(returnImage);
       }
     });
+  });
+}
+
+- (void)notifyNewColor:(UIColor*)color {
+  [[NSNotificationCenter defaultCenter] postNotificationName:@"colorUpdated" object:nil userInfo:@{@"color" : color}];
+  
+}
+
+// On Capture Queue Thread
+- (void)captureOutput:(AVCaptureOutput *)captureOutput didDropSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
+  
+}
+
+
+- (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection {
+  CVImageBufferRef imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer);
+  /*Lock the image buffer*/
+  CVPixelBufferLockBaseAddress(imageBuffer,0);
+  /*Get information about the image*/
+  size_t width = CVPixelBufferGetWidth(imageBuffer);
+  size_t height = CVPixelBufferGetHeight(imageBuffer);
+  
+  uint8_t* baseAddress = (uint8_t*)CVPixelBufferGetBaseAddress(imageBuffer);
+  int numberOfPixels = (int)width * (int)height * 4;
+  numberOfPixels = numberOfPixels / 2;
+  
+  NSMutableArray *colorBuckets = [NSMutableArray array];
+  int i = 0;
+  while (i < numberOfPixels) {
+    
+    float blue = (float)*(baseAddress + i) / 255.0f;
+    i++;
+    float green = (float)*(baseAddress + i) / 255.0f;
+    i++;
+    float red = (float)*(baseAddress + i) / 255.0f;
+    i++;
+    i++;
+    i+=4;
+    // Convert to Y for brightness.
+    float y = 0.299 * red + 0.587 * green + 0.114 * blue;
+    float u = -0.14713 * red - 0.28886 * green + 0.436 * blue;
+    float v = 0.615 * red - 0.51499 * green - 0.10001 * blue;
+    
+    double min, max, delta, s;
+    
+    min = red < green ? red : green;
+    min = min  < blue ? min  : blue;
+    
+    max = red > green ? red : green;
+    max = max  > blue ? max  : blue;
+    
+    delta = max - min;
+    if( max > 0.0 )
+      s = (delta / max);
+    else
+      s = 0;
+    
+    //Check if valid color brightness
+    if (0.3 < y && y < 0.9 && fabs(u) > 0.05 && fabs(v) > 0.05 && s > 0.3) {
+      NSMutableDictionary *newColor = [NSMutableDictionary dictionaryWithDictionary:@{@"y": @(y), @"u" : @(u), @"v" : @(v),
+                                                                                      @"r" : @(red), @"g" : @(green), @"b" : @(blue)}];
+      BOOL addedColor = NO;
+      if (colorBuckets.count > 0) {
+        for (NSMutableArray *bucket in colorBuckets) {
+          //Find Distance
+          NSMutableDictionary *bColor = [bucket objectAtIndex:0];
+          float u2 = [[bColor objectForKey:@"u"] floatValue];
+          float v2 = [[bColor objectForKey:@"v"] floatValue];
+          float y2 = [[bColor objectForKey:@"y"] floatValue];
+          
+          float distance = sqrt(pow(u2 - u, 2) + pow(v2 - v, 2) + pow(y2 - y, 2));
+          if (distance < 0.1) {
+            // Weight first Average
+            float count = bucket.count;
+            
+            [bColor setObject:@([self weightedAverage:[[bColor valueForKey:@"r"] floatValue] count:count newNumber:red]) forKey:@"r"];
+            [bColor setObject:@([self weightedAverage:[[bColor valueForKey:@"g"] floatValue] count:count newNumber:green]) forKey:@"g"];
+            [bColor setObject:@([self weightedAverage:[[bColor valueForKey:@"b"] floatValue] count:count newNumber:blue]) forKey:@"b"];
+            
+            [bColor setObject:@([self weightedAverage:[[bColor valueForKey:@"y"] floatValue] count:count newNumber:y]) forKey:@"y"];
+            [bColor setObject:@([self weightedAverage:[[bColor valueForKey:@"u"] floatValue] count:count newNumber:u]) forKey:@"u"];
+            [bColor setObject:@([self weightedAverage:[[bColor valueForKey:@"v"] floatValue] count:count newNumber:v]) forKey:@"v"];
+            [newColor setObject:@([self weightedAverage:[[bColor valueForKey:@"r"] floatValue] count:count newNumber:red]) forKey:@"r"];
+            [newColor setObject:@([self weightedAverage:[[bColor valueForKey:@"g"] floatValue] count:count newNumber:green]) forKey:@"g"];
+            [newColor setObject:@([self weightedAverage:[[bColor valueForKey:@"b"] floatValue] count:count newNumber:blue]) forKey:@"b"];
+            
+            [newColor setObject:@([self weightedAverage:[[bColor valueForKey:@"y"] floatValue] count:count newNumber:y]) forKey:@"y"];
+            [newColor setObject:@([self weightedAverage:[[bColor valueForKey:@"u"] floatValue] count:count newNumber:u]) forKey:@"u"];
+            [newColor setObject:@([self weightedAverage:[[bColor valueForKey:@"v"] floatValue] count:count newNumber:v]) forKey:@"v"];
+            
+            [bucket addObject:newColor];
+            addedColor = YES;
+            break;
+          }
+        }
+      }
+      if (!addedColor) {
+        [colorBuckets addObject:[NSMutableArray arrayWithObject:newColor]];
+      }
+    }
+  }
+  [colorBuckets sortUsingComparator:^NSComparisonResult(NSArray *obj1, NSArray *obj2) {
+    return obj1.count >= obj2.count ? NSOrderedAscending : NSOrderedDescending;
+  }];
+  
+  UIColor *popularColor = [UIColor whiteColor];
+  
+  if (colorBuckets.count) {
+    NSDictionary *popCol = [[colorBuckets objectAtIndex:0] objectAtIndex:0];
+    for (NSArray *bucket in colorBuckets) {
+      NSMutableDictionary *bColor = [bucket objectAtIndex:0];
+      float u = [[bColor objectForKey:@"u"] floatValue];
+      float v = [[bColor objectForKey:@"v"] floatValue];
+      if (!(u < 0 && v < 0.26 && v > -0)) {
+        popCol = bColor;
+        break;
+      }
+    }
+    popularColor = [UIColor colorWithRed:[[popCol objectForKey:@"r"] floatValue] green:[[popCol objectForKey:@"g"] floatValue] blue:[[popCol objectForKey:@"b"] floatValue] alpha:1];
+  }
+  
+
+	CVPixelBufferUnlockBaseAddress(imageBuffer, 0);
+  
+  dispatch_async(dispatch_get_main_queue(), ^{
+    [self notifyNewColor:popularColor];
   });
 }
 @end

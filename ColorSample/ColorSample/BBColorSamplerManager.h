@@ -7,12 +7,12 @@
 //
 
 #import <Foundation/Foundation.h>
-
+#import <AVFoundation/AVFoundation.h>
 #define kBBColorSamplerDidFindColorNotification @"BBColorSamplerDidFindColor"
 
 typedef void (^color_sampler_completion_block_t)(UIColor *);
 typedef void (^color_sampler_sort_completion_block_t)(UIImage *);
-@interface BBColorSamplerManager : NSObject
+@interface BBColorSamplerManager : NSObject <AVCaptureVideoDataOutputSampleBufferDelegate>
 
 - (void)computePrimaryColorForImage:(UIImage *)image completionBlock:(color_sampler_completion_block_t)completionBlock;
 - (void)sortColorForImage:(UIImage *)image completionBlock:(color_sampler_sort_completion_block_t)completionBlock;

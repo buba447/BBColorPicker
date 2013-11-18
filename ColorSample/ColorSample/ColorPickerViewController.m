@@ -8,9 +8,10 @@
 
 #import "ColorPickerViewController.h"
 #import "BBColorSamplerManager.h"
-
+#import <AVFoundation/AVFoundation.h>
 @interface ColorPickerViewController ()
-
+@property (nonatomic, strong) AVCaptureVideoPreviewLayer *prevLayer;
+@property (nonatomic, strong) AVCaptureSession *captureSession;
 @end
 
 @implementation ColorPickerViewController {
@@ -19,12 +20,14 @@
   UIImage *theImage_;
   UIButton *selectButton_;
   UIView *backgroundColor_;
+  UIButton *startCamera_;
+  UIView *cameraFrame_;
 }
 
 - (id)init {
   self = [super init];
   if (self) {
-    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(updateColor:) name:@"colorUpdated" object:nil];
   }
   return self;
 }
@@ -66,7 +69,21 @@
   [selectButton_ addTarget:self action:@selector(selectImage) forControlEvents:UIControlEventTouchUpInside];
   selectButton_.frame = frame3;
   [self.view addSubview:selectButton_];
+  CGFloat aspectRatio = self.view.bounds.size.height / self.view.bounds.size.width;
+  CGRect camerarect = CGRectInset(self.view.bounds, 50, 50);
+  camerarect.size.height = camerarect.size.width * aspectRatio;
+  cameraFrame_ = [[UIView alloc] initWithFrame:camerarect];
+  [self.view addSubview:cameraFrame_];
+  cameraFrame_.hidden = YES;
   
+  startCamera_ = [UIButton buttonWithType:UIButtonTypeCustom];
+  startCamera_.backgroundColor = [UIColor darkGrayColor];
+  CGRect leftButton = frame3;
+  leftButton.origin.x = 10;
+  startCamera_.frame = leftButton;
+  [startCamera_ addTarget:self action:@selector(startCamera) forControlEvents:UIControlEventTouchUpInside];
+  [self.view addSubview:startCamera_];
+  startCamera_.hidden = ![UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera];
 }
 
 - (void)selectImage {
@@ -134,5 +151,65 @@
       sortedImage_.alpha = 1;
     }];
   }];
+}
+
+- (void)startCamera {
+  if (self.captureSession) {
+    if ([self.captureSession isRunning]) {
+      [self.captureSession stopRunning];
+      selectedImage_.hidden = NO;
+      sortedImage_.hidden = NO;
+      selectButton_.hidden = NO;
+      cameraFrame_.hidden = YES;
+    } else {
+      selectedImage_.hidden = YES;
+      sortedImage_.hidden = YES;
+      selectButton_.hidden = YES;
+      cameraFrame_.hidden = NO;
+      [self.captureSession startRunning];
+    }
+    return;
+  }
+  selectedImage_.hidden = YES;
+  sortedImage_.hidden = YES;
+  selectButton_.hidden = YES;
+  cameraFrame_.hidden = NO;
+  
+  AVCaptureDeviceInput *captureInput = [AVCaptureDeviceInput
+                                        deviceInputWithDevice:[AVCaptureDevice defaultDeviceWithMediaType:AVMediaTypeVideo]
+                                        error:nil];
+  AVCaptureVideoDataOutput *captureOutput = [[AVCaptureVideoDataOutput alloc] init];
+  captureOutput.alwaysDiscardsLateVideoFrames = YES;
+  dispatch_queue_t queue;
+  queue = dispatch_queue_create("cameraQueue", NULL);
+  [captureOutput setSampleBufferDelegate:[BBColorSamplerManager sharedManager] queue:queue];
+  NSString* key = (NSString*)kCVPixelBufferPixelFormatTypeKey;
+  NSNumber* value = [NSNumber numberWithUnsignedInt:kCVPixelFormatType_32BGRA];
+  NSDictionary* videoSettings = [NSDictionary dictionaryWithObject:value forKey:key];
+  [captureOutput setVideoSettings:videoSettings];
+  self.captureSession = [[AVCaptureSession alloc] init] ;
+  [self.captureSession addInput:captureInput];
+  [self.captureSession addOutput:captureOutput];
+  self.captureSession.sessionPreset=AVCaptureSessionPresetMedium;
+  if (!self.prevLayer) {
+    self.prevLayer = [AVCaptureVideoPreviewLayer layerWithSession:self.captureSession];
+  }
+  self.prevLayer.frame = cameraFrame_.bounds;
+  self.prevLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+  [cameraFrame_.layer addSublayer:self.prevLayer];
+  [self.captureSession startRunning];
+}
+
+- (void)updateColor:(NSNotification *)notification {
+  NSDictionary *info = [notification userInfo];
+  [UIView animateWithDuration:0.1
+                        delay:0
+                      options:(UIViewAnimationOptionBeginFromCurrentState)
+                   animations:^{
+                     backgroundColor_.backgroundColor = [info objectForKey:@"color"];
+                   } completion:^(BOOL finished) {
+                     
+                   }];
+  
 }
 @end
