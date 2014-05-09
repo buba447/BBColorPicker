@@ -16,6 +16,7 @@
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     // Override point for customization after application launch.
   ColorPickerViewController *colorViewControler = [[ColorPickerViewController alloc] init];
+  NSMutableArray *array = [NSMutableArray arrayWithArray:nil];
   self.window.rootViewController = colorViewControler;
     self.window.backgroundColor = [UIColor whiteColor];
     [self.window makeKeyAndVisible];

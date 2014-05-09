@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		48151A93183449180011E553 /* listing_collections_add.png in Resources */ = {isa = PBXBuildFile; fileRef = 48151A91183449180011E553 /* listing_collections_add.png */; };
 		48151A94183449180011E553 /* listing_collections_add@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 48151A92183449180011E553 /* listing_collections_add@2x.png */; };
+		48334620183C3EEF0042988C /* CrossSetter.m in Sources */ = {isa = PBXBuildFile; fileRef = 4833461F183C3EEF0042988C /* CrossSetter.m */; };
 		4892A2FA1836EAAB00D78574 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 4892A2F91836EAAB00D78574 /* AVFoundation.framework */; };
 		48DE227218340DFD002FA349 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 48DE227118340DFD002FA349 /* Foundation.framework */; };
 		48DE227418340DFD002FA349 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 48DE227318340DFD002FA349 /* CoreGraphics.framework */; };
@@ -39,6 +40,8 @@
 /* Begin PBXFileReference section */
 		48151A91183449180011E553 /* listing_collections_add.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = listing_collections_add.png; sourceTree = "<group>"; };
 		48151A92183449180011E553 /* listing_collections_add@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "listing_collections_add@2x.png"; sourceTree = "<group>"; };
+		4833461E183C3EEF0042988C /* CrossSetter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CrossSetter.h; sourceTree = "<group>"; };
+		4833461F183C3EEF0042988C /* CrossSetter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CrossSetter.m; sourceTree = "<group>"; };
 		4892A2F91836EAAB00D78574 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		48DE226E18340DFD002FA349 /* ColorSample.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ColorSample.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		48DE227118340DFD002FA349 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
@@ -127,6 +130,8 @@
 				48DE228118340DFD002FA349 /* AppDelegate.m */,
 				48DE22A318340E9A002FA349 /* ColorPickerViewController.h */,
 				48DE22A418340E9A002FA349 /* ColorPickerViewController.m */,
+				4833461E183C3EEF0042988C /* CrossSetter.h */,
+				4833461F183C3EEF0042988C /* CrossSetter.m */,
 				48DE228318340DFD002FA349 /* Images.xcassets */,
 				48DE227818340DFD002FA349 /* Supporting Files */,
 			);
@@ -264,6 +269,7 @@
 				48DE228218340DFD002FA349 /* AppDelegate.m in Sources */,
 				48DE227E18340DFD002FA349 /* main.m in Sources */,
 				48DE22A518340E9A002FA349 /* ColorPickerViewController.m in Sources */,
+				48334620183C3EEF0042988C /* CrossSetter.m in Sources */,
 				48DE22A218340E1D002FA349 /* BBColorSamplerManager.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
